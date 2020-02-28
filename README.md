@@ -1,5 +1,7 @@
 # PADD
 
+OBS: This is a local copy of PSPADD enabling communication with an Domoticz installation
+
 PADD (formerly Chronometer2) is a more expansive version of the original chronometer.sh that is included with [Pi-Hole](https://pi-hole.net). PADD provides in-depth information about your Pi-hole.
 
 ![PADD](https://jpmck.com/img/blog/padd.png)
