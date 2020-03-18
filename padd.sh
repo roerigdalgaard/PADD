@@ -18,6 +18,14 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="3.1"
+padd_build="(34)"
+
+
+# Settings for Domoticz
+
+# read settings from config file:
+. $(dirname "$0")/padd.config
+
 
 # DATE
 today=$(date +%Y%m%d)
@@ -77,7 +85,7 @@ full_status_unknown="${check_box_question} Status unknown!"
 
 # MEGA STATUS
 mega_status_ok="${check_box_good} Your system is healthy."
-mega_status_update="${check_box_info} Updates are available."
+mega_status_update="${check_box_bad} Updates are available."
 mega_status_hot="${check_box_bad} Your system is hot!"
 mega_status_off="${check_box_bad} Pi-hole is off-line."
 mega_status_ftl_down="${check_box_info} FTLDNS service is not running."
@@ -197,9 +205,9 @@ GetSummaryInformation() {
 GetSystemInformation() {
   # System uptime
   if [ "$1" = "pico" ] || [ "$1" = "nano" ] || [ "$1" = "micro" ]; then
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours"}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"d   ,",h+0,"h,   "}')
   else
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours,",m+0,"minutes"}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"d   ,",h+0,"h   ,",m+0,"m"}')
   fi
 
   # CPU temperature
@@ -215,8 +223,14 @@ GetSystemInformation() {
   elif [ "${TEMPERATUREUNIT}" == "K" ]; then
     temperature="$(printf %.1f "$(echo "${cpu}" | awk '{print $1 / 1000 + 273.15}')")°K"
   # Addresses Issue 1: https://github.com/jpmck/PAD/issues/1
-  else
+ else
     temperature="$(printf %.1f "$(echo "${cpu}" | awk '{print $1 / 1000}')")°C"
+    temperature1="$(printf %.1f "$(echo "${cpu}" | awk '{print $1 / 1000}')")"
+  fi
+  echo "$temperature1" > /home/pi/temperature.log
+
+  if [[ "$dzhost" != "" ]]; then
+      wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxtmp&svalue=$temperature1" #>>speedtest.log # >/dev/null 2>&1
   fi
 
   # CPU load, heatmap
@@ -224,8 +238,45 @@ GetSystemInformation() {
   cpu_load_1_heatmap=$(HeatmapGenerator "${cpu_load[0]}" "${core_count}")
   cpu_load_5_heatmap=$(HeatmapGenerator "${cpu_load[1]}" "${core_count}")
   cpu_load_15_heatmap=$(HeatmapGenerator "${cpu_load[2]}" "${core_count}")
-  cpu_percent=$(printf %.1f "$(echo "${cpu_load[0]} ${core_count}" | awk '{print ($1 / $2) * 100}')")
+  # OLD: cpu_percent=$(printf %.1f "$(echo "${cpu_load[0]} ${core_count}" | awk '{print ($1 / $2) * 100}')")
+  
+  # Get the total CPU statistics, discarding the 'cpu ' prefix.
+  
+  CPU=($(sed -n 's/^cpu\s//p' /proc/stat))
+  IDLE=${CPU[3]} # Just the idle CPU time.
 
+  # Calculate the total CPU time.
+  TOTAL=0
+  for VALUE in "${CPU[@]:0:8}"; do
+    TOTAL=$((TOTAL+VALUE))
+  done
+
+  # Calculate the CPU usage since we last checked.
+  DIFF_IDLE=$((IDLE-PREV_IDLE))
+  DIFF_TOTAL=$((TOTAL-PREV_TOTAL))
+  # DIFF_USAGE=$(((1000*(DIFF_TOTAL-DIFF_IDLE)/DIFF_TOTAL+5)/10))
+  DIFF_USAGE=$(((1000*(DIFF_TOTAL-DIFF_IDLE)/DIFF_TOTAL+5)))
+
+  DIFF_USAGE=$(echo "scale=1; $DIFF_USAGE / 10" | bc)
+  
+  cpu_percent=$DIFF_USAGE
+  
+  cpu_int=${cpu_percent%.*}
+
+  if [ $cpu_int -gt 100 ]; then 
+    cpu_percent="100"
+  fi
+
+  echo "$cpu_percent" > /home/pi/cpu.log
+  
+  if [[ "$dzhost" != "" ]]; then
+    wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxcpu&svalue=$cpu_percent" #>>speedtest.log # >/dev/null 2>&1
+  fi
+  
+  # Remember the total and idle CPU times for the next check.
+  PREV_TOTAL="$TOTAL"
+  PREV_IDLE="$IDLE"
+  
   # CPU temperature heatmap
   # If we're getting close to 85°C... (https://www.raspberrypi.org/blog/introducing-turbo-mode-up-to-50-more-performance-for-free/)
   if [ ${cpu} -gt 80000 ]; then
@@ -237,7 +288,7 @@ GetSystemInformation() {
   elif [ ${cpu} -gt 70000 ]; then
     temp_heatmap=${magenta_text}
   elif [ ${cpu} -gt 60000 ]; then
-    temp_heatmap=${blue_text}
+    temp_heatmap=${yellow_text}
   else
     temp_heatmap=${cyan_text}
   fi
@@ -490,7 +541,12 @@ GetVersionInformation() {
     fi
 
     # PADD version information...
-    padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'Location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+    # FIX 3.1 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'Location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+    padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+
+    if [[ "$padd_version_latest" == "" ]] ; then
+       padd_version_latest=$padd_version
+    fi
 
     # is PADD up-to-date?
     if [[ "${padd_version}" != "${padd_version_latest}" ]]; then
@@ -536,15 +592,20 @@ GetVersionInformation() {
     echo "last_check=${today}" > ./piHoleVersion
     {
       echo "core_version=$core_version"
+      echo "core_version_latest=$core_version_latest"
       echo "core_version_heatmap=$core_version_heatmap"
 
       echo "web_version=$web_version"
+      echo "web_version_latest=$web_version_latest"
       echo "web_version_heatmap=$web_version_heatmap"
 
       echo "ftl_version=$ftl_version"
+      
+      echo "ftl_version_latest=$ftl_version_latest"
       echo "ftl_version_heatmap=$ftl_version_heatmap"
 
       echo "padd_version=$padd_version"
+      echo "padd_version_latest=$padd_version_latest"
       echo "padd_version_heatmap=$padd_version_heatmap"
 
       echo "version_status=\"$version_status\""
@@ -577,6 +638,10 @@ CleanPrintf() {
 }
 
 PrintLogo() {
+  clock=$(date +%H:%M:%S)
+  # osupdate=$(sudo apt-get -s upgrade | grep opgraderes | awk '{print $1}')
+  osupdate=$(more /home/pi/UpdateNeeded.txt)
+  
   # Screen size checks
   if [ "$1" = "pico" ]; then
     CleanEcho "p${padd_text} ${pico_status}"
@@ -600,10 +665,14 @@ PrintLogo() {
   # normal or not defined
   else
     CleanPrintf "${padd_logo_retro_1}\e[0K\\n"
-    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}v${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}v${padd_version}${reset_text}\e[0K\\n"
+    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}v${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}v${padd_version}$padd_build${reset_text}\e[0K\\n"
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
-
-    CleanEcho ""
+    #CleanEcho ""
+     if [ "$osupdate" != "0" ]; then
+        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${red_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+    else  
+        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
+    fi
   fi
 }
 
@@ -1036,6 +1105,8 @@ StartupRoutine(){
     echo "  - FTL v$ftl_version"
     echo "  - PADD v$padd_version"
     echo "  - $version_status"
+    echo "  - CPU has $core_count cores"
+    echo -e "  - IPv4:    ${IPV4_ADDRESS}"
   fi
 
   printf "%s" "- Starting in "
@@ -1045,6 +1116,33 @@ StartupRoutine(){
     printf "%s..." "$i"
     sleep 1
   done
+}
+
+PrintUsersDZ() {
+    count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
+    if [ "$count" = "No" ] ; then
+       count="0"
+    fi
+    sshcount=$(netstat -tn | grep :22 | grep ESTABLISHED | wc -l)
+
+    if [[ "$dzhost" != "" ]]; then
+        wget -q  --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxvpn&svalue=$count"
+        wget -q  --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxssh&svalue=$sshcount"
+    fi
+    
+    if [[ "$count" != "0" ]] ; then
+        count="${yellow_text}$count ${reset_text}"
+    else 
+        count="${green_text}$count ${reset_text}"
+    fi
+    
+    if [[ "$sshcount" != "0" ]] ; then
+        sshcount="${yellow_text}$sshcount ${reset_text}"
+    else 
+        sshcount="${green_text}$sshcount ${reset_text}"
+    fi
+    
+    CleanPrintf "\e[0K\\n VPN count: $count        SSH count: $sshcount\e[0K\\n"
 }
 
 NormalPADD() {
@@ -1069,6 +1167,8 @@ NormalPADD() {
     PrintNetworkInformation ${padd_size}
     PrintSystemInformation ${padd_size}
     
+    PrintUsersDZ
+    
     # Clear to end of screen (below the drawn dashboard)
     tput ed
 
@@ -1081,9 +1181,27 @@ NormalPADD() {
     GetNetworkInformation ${padd_size}
     GetSummaryInformation ${padd_size}
     GetSystemInformation ${padd_size}
-
+ 
     # Sleep for 5 seconds
-    sleep 5
+    # sleep 5
+    if [[ "$padd_size" == "mega" ]] ; then 
+      tput cup 3 0
+      echo "/"
+      sleep 2
+      tput cup 3 0
+      echo "-"
+      sleep 2
+      tput cup 3 0
+      echo "\\"
+      sleep 2
+      tput cup 3 0
+      echo "|"
+      #sleep 2
+      #tput cup 3 0
+      #echo "+"
+    else 
+        sleep 5
+    fi
   done
 }
 
