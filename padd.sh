@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="3.1"
-padd_build="(34)"
+padd_build="(35)"
 
 
 # Settings for Domoticz
@@ -272,6 +272,7 @@ GetSystemInformation() {
   if [[ "$dzhost" != "" ]]; then
     wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxcpu&svalue=$cpu_percent" #>>speedtest.log # >/dev/null 2>&1
   fi
+  
   
   # Remember the total and idle CPU times for the next check.
   PREV_TOTAL="$TOTAL"
@@ -1118,16 +1119,20 @@ StartupRoutine(){
   done
 }
 
-PrintUsersDZ() {
+PrintDZdata() {
     count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
     if [ "$count" = "No" ] ; then
        count="0"
     fi
     sshcount=$(netstat -tn | grep :22 | grep ESTABLISHED | wc -l)
 
+
+    disk_percent=$(df -k | grep /dev/root | awk '{printf "%5.2f",$3/$2*100.0}')
+  
     if [[ "$dzhost" != "" ]]; then
-        wget -q  --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxvpn&svalue=$count"
-        wget -q  --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxssh&svalue=$sshcount"
+        wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxvpn&svalue=$count"
+        wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxssh&svalue=$sshcount"
+        wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxdisk&svalue=$disk_percent"
     fi
     
     if [[ "$count" != "0" ]] ; then
@@ -1142,7 +1147,9 @@ PrintUsersDZ() {
         sshcount="${green_text}$sshcount ${reset_text}"
     fi
     
-    CleanPrintf "\e[0K\\n VPN count: $count        SSH count: $sshcount\e[0K\\n"
+    disk_percent="${green_text}$disk_percent%%${reset_text}"
+    
+    CleanPrintf "\e[0K\\n VPN count: $count        SSH count: $sshcount         Diskfree: ${disk_percent} \e[0K\\n"
 }
 
 NormalPADD() {
@@ -1167,7 +1174,7 @@ NormalPADD() {
     PrintNetworkInformation ${padd_size}
     PrintSystemInformation ${padd_size}
     
-    PrintUsersDZ
+    PrintDZdata
     
     # Clear to end of screen (below the drawn dashboard)
     tput ed
