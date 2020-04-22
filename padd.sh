@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="3.1"
-padd_build="(35)"
+padd_build="(36)"
 
 
 # Settings for Domoticz
@@ -205,9 +205,9 @@ GetSummaryInformation() {
 GetSystemInformation() {
   # System uptime
   if [ "$1" = "pico" ] || [ "$1" = "nano" ] || [ "$1" = "micro" ]; then
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"d   ,",h+0,"h,   "}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"day,",h+0,"hour,"}')
   else
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"d   ,",h+0,"h   ,",m+0,"m"}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"day,",h+0,"hour,",m+0,"min"}')
   fi
 
   # CPU temperature
@@ -272,7 +272,6 @@ GetSystemInformation() {
   if [[ "$dzhost" != "" ]]; then
     wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxcpu&svalue=$cpu_percent" #>>speedtest.log # >/dev/null 2>&1
   fi
-  
   
   # Remember the total and idle CPU times for the next check.
   PREV_TOTAL="$TOTAL"
@@ -1121,11 +1120,13 @@ StartupRoutine(){
 
 PrintDZdata() {
     count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
+    if [ "$count" = "" ] ; then
+       count="Error"
+    fi
     if [ "$count" = "No" ] ; then
        count="0"
     fi
     sshcount=$(netstat -tn | grep :22 | grep ESTABLISHED | wc -l)
-
 
     disk_percent=$(df -k | grep /dev/root | awk '{printf "%5.2f",$3/$2*100.0}')
   
@@ -1148,8 +1149,9 @@ PrintDZdata() {
     fi
     
     disk_percent="${green_text}$disk_percent%%${reset_text}"
-    
-    CleanPrintf "\e[0K\\n VPN count: $count        SSH count: $sshcount         Diskfree: ${disk_percent} \e[0K\\n"
+    CleanPrintf "\e[0K\\n "
+    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
+    CleanPrintf "\e[0K\\n"
 }
 
 NormalPADD() {
