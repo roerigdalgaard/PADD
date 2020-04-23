@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="3.1"
-padd_build="(36)"
+padd_build="(36.1)"
 
 
 # Settings for Domoticz
@@ -1119,10 +1119,16 @@ StartupRoutine(){
 }
 
 PrintDZdata() {
-    count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
+    if hash ipsec 2>/dev/null; then
+       count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
+    else    
+        count="-%-"
+    fi
+    
     if [ "$count" = "" ] ; then
        count="Error"
     fi
+    
     if [ "$count" = "No" ] ; then
        count="0"
     fi
@@ -1148,7 +1154,7 @@ PrintDZdata() {
         sshcount="${green_text}$sshcount ${reset_text}"
     fi
     
-    disk_percent="${green_text}$disk_percent%%${reset_text}"
+    disk_percent="${green_text}$disk_percent%${reset_text}"
     CleanPrintf "\e[0K\\n "
     CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
     CleanPrintf "\e[0K\\n"
