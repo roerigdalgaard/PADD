@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="3.1"
-padd_build="(36.1)"
+padd_build="(37)"
 
 
 # Settings for Domoticz
@@ -1120,7 +1120,7 @@ StartupRoutine(){
 
 PrintDZdata() {
     if hash ipsec 2>/dev/null; then
-       count=$(sudo ipsec setup --status | grep tunnels | awk '{print $1}')
+       count=$(sudo ipsec status | grep ESTABLISHED | wc -l)
     else    
         count="-%-"
     fi
