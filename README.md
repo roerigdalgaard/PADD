@@ -2,6 +2,8 @@
 
 OBS: This is a local copy of PSPADD enabling communication with an Domoticz installation
 
+This version requires at raspberypi running BUSTER, Domotics v2020.1 or later and strongswan VPN installed (if wanted)
+
 PADD (formerly Chronometer2) is a more expansive version of the original chronometer.sh that is included with [Pi-Hole](https://pi-hole.net). PADD provides in-depth information about your Pi-hole.
 
 ![PADD](https://jpmck.com/img/blog/padd.png)
