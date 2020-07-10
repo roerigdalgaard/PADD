@@ -17,8 +17,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="3.1"
-padd_build="(37)"
+padd_version="3.2.1"
+padd_build="(38)"
 
 
 # Settings for Domoticz
@@ -101,7 +101,7 @@ mini_text_retro="${dim_text}${cyan_text}m${magenta_text}i${red_text}n${yellow_te
 padd_logo_1="${bold_text}${green_text} __      __  __   ${reset_text}"
 padd_logo_2="${bold_text}${green_text}|__) /\\ |  \\|  \\  ${reset_text}"
 padd_logo_3="${bold_text}${green_text}|   /--\\|__/|__/  ${reset_text}"
-padd_logo_retro_1="${bold_text} ${yellow_text}_${green_text}_      ${blue_text}_   ${yellow_text}_${green_text}_   ${reset_text}"
+padd_logo_retro_1="${bold_text} ${yellow_text}_${green_text}_      ${blue_text}_${magenta_text}_  ${yellow_text}_${green_text}_   ${reset_text}"
 padd_logo_retro_2="${bold_text}${yellow_text}|${green_text}_${blue_text}_${cyan_text}) ${red_text}/${yellow_text}\\ ${blue_text}|  ${red_text}\\${yellow_text}|  ${cyan_text}\\  ${reset_text}"
 padd_logo_retro_3="${bold_text}${green_text}|   ${red_text}/${yellow_text}-${green_text}-${blue_text}\\${cyan_text}|${magenta_text}_${red_text}_${yellow_text}/${green_text}|${blue_text}_${cyan_text}_${magenta_text}/  ${reset_text}"
 
@@ -205,9 +205,9 @@ GetSummaryInformation() {
 GetSystemInformation() {
   # System uptime
   if [ "$1" = "pico" ] || [ "$1" = "nano" ] || [ "$1" = "micro" ]; then
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"day,",h+0,"hour,"}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours"}')
   else
-    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"day,",h+0,"hour,",m+0,"min"}')
+    system_uptime=$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/){if ($9=="min") {d=$6;m=$8} else {d=$6;h=$8;m=$9}} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours,",m+0,"minutes"}')
   fi
 
   # CPU temperature
@@ -379,7 +379,7 @@ GetNetworkInformation() {
     # if the DHCP Router variable isn't set
     # Issue 3: https://github.com/jpmck/PADD/issues/3
     if [ -z ${DHCP_ROUTER+x} ]; then
-      DHCP_ROUTER=$(/sbin/ip route | awk '/default/ { print $3 }')
+      DHCP_ROUTER=$(/sbin/ip route | awk '/default/ { printf "%s\t", $3 }')
     fi
 
     dhcp_info=" Router:   ${DHCP_ROUTER}"
@@ -542,7 +542,8 @@ GetVersionInformation() {
 
     # PADD version information...
     # FIX 3.1 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'Location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
-    padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+    # Fix 3.2 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+    padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | awk -F / 'tolower($0) ~ /^location:/ {print $NF; exit}' | tr -d '\r\n[:alpha:]')
 
     if [[ "$padd_version_latest" == "" ]] ; then
        padd_version_latest=$padd_version
@@ -628,7 +629,7 @@ ceol=$(tput el)
 
 # wrapper - echo with a clear eol afterwards to wipe any artifacts remaining from last print
 CleanEcho() {
-  echo -e $1 "${ceol}"
+  echo -e "${ceol}$1"
 }
 
 # wrapper - printf
