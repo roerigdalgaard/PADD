@@ -17,8 +17,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="3.2.1"
-padd_build="(38)"
+padd_version="v3.2.2"
+padd_build="(39)"
 
 
 # Settings for Domoticz
@@ -118,6 +118,8 @@ pihole_logo_script_retro_3="${green_text}'  ${red_text}'   ${magenta_text}' ${ye
 GetFTLData() {
   # Get FTL port number
   ftl_port=$(cat /var/run/pihole-FTL.port)
+  ftl_port=4711 # TEMP fix for FTL 5.1 bug
+
 
   # Did we find a port for FTL?
   if [[ -n "$ftl_port" ]]; then
@@ -542,8 +544,9 @@ GetVersionInformation() {
 
     # PADD version information...
     # FIX 3.1 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'Location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
-    # Fix 3.2 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
-    padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | awk -F / 'tolower($0) ~ /^location:/ {print $NF; exit}' | tr -d '\r\n[:alpha:]')
+    # Fix 3.2.1 padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | grep 'location' | awk -F '/' '{print $NF}' | tr -d '\r\n[:alpha:]')
+    # Fix 3.2.2padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | awk -F / 'tolower($0) ~ /^location:/ {print $NF; exit}' | tr -d '\r\n[:alpha:]')
+    padd_version_latest=$(json_extract tag_name "$(curl -s 'https://api.github.com/repos/pi-hole/PADD/releases/latest' 2> /dev/null)")
 
     if [[ "$padd_version_latest" == "" ]] ; then
        padd_version_latest=$padd_version
@@ -661,12 +664,12 @@ PrintLogo() {
   elif [[ "$1" = "regular" || "$1" = "slim" ]]; then
     CleanPrintf "${padd_logo_1}\e[0K\\n"
     CleanPrintf "${padd_logo_2}Pi-hole® ${core_version_heatmap}v${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}\e[0K\\n"
-    CleanPrintf "${padd_logo_3}PADD ${padd_version_heatmap}v${padd_version}${reset_text}${full_status_}${reset_text}\e[0K\\n"
+    CleanPrintf "${padd_logo_3}PADD ${padd_version_heatmap}${padd_version}${reset_text}${full_status_}${reset_text}\e[0K\\n"
     CleanEcho ""
   # normal or not defined
   else
     CleanPrintf "${padd_logo_retro_1}\e[0K\\n"
-    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}v${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}v${padd_version}$padd_build${reset_text}\e[0K\\n"
+    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}v${padd_version}$padd_build${reset_text}\e[0K\\n"
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     #CleanEcho ""
      if [ "$osupdate" != "0" ]; then
@@ -1065,7 +1068,7 @@ StartupRoutine(){
     echo "- Gathering version info."
     GetVersionInformation "mini"
     echo "  - Core v$core_version, Web v$web_version"
-    echo "  - FTL v$ftl_version, PADD v$padd_version"
+    echo "  - FTL v$ftl_version, PADD $padd_version"
     echo "  - $version_status"
 
   else
@@ -1104,7 +1107,7 @@ StartupRoutine(){
     echo "  - Pi-hole Core v$core_version"
     echo "  - Web Admin v$web_version"
     echo "  - FTL v$ftl_version"
-    echo "  - PADD v$padd_version"
+    echo "  - PADD $padd_version"
     echo "  - $version_status"
     echo "  - CPU has $core_count cores"
     echo -e "  - IPv4:    ${IPV4_ADDRESS}"
