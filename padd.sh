@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(39)"
+padd_build="(40)"
 
 
 # Settings for Domoticz
@@ -669,10 +669,14 @@ PrintLogo() {
   # normal or not defined
   else
     CleanPrintf "${padd_logo_retro_1}\e[0K\\n"
-    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}v${padd_version}$padd_build${reset_text}\e[0K\\n"
+    CleanPrintf "${padd_logo_retro_2}   Pi-hole® ${core_version_heatmap}${core_version}${reset_text}, Web ${web_version_heatmap}v${web_version}${reset_text}, FTL ${ftl_version_heatmap}v${ftl_version}${reset_text}, PADD ${padd_version_heatmap}${padd_version}$padd_build${reset_text}\e[0K\\n"
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     #CleanEcho ""
-     if [ "$osupdate" != "0" ]; then
+     if [ "$osupdate" == "Searching" ]; then
+        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${yellow_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+     elif [ "$osupdate" == "Patching" ]; then
+        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${green_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+     elif [ "$osupdate" != "0" ]; then
         CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${red_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
     else  
         CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
