@@ -14,7 +14,7 @@ PADD (formerly Chronometer2) is a more expansive version of the original chronom
 - Get a copy of PADD by running:
 ```bash
 cd ~
-wget -N https://raw.githubusercontent.com/jpmck/PADD/master/padd.sh
+wget -N https://raw.githubusercontent.com/roerigdalgaard/PADD/master/padd.sh
 ```
 - Make PADD executable by running
 ```bash
@@ -42,10 +42,9 @@ cd ~ ; echo "if [ \"\$TERM\" == \"linux\" ] ; then\n  while :\n  do\n    ./padd.
 - Just run
 ```bash
 cd ~
-wget -N https://raw.githubusercontent.com/jpmck/PADD/master/padd.sh
+wget -N https://raw.githubusercontent.com/roerigdalgaard/PADD/master/padd.sh
 ```
 
-**Note: if you are already running Chronometer2 v1.3.1 or below, you’ll need to follow [these instructions](https://github.com/jpmck/PADD/wiki/Updating-from-Chronometer2)!**
 
 ## FAQ
-*Answers to frequently asked questions can be found in this repo’s [wiki](https://github.com/jpmck/PADD/wiki/FAQ).*
+*Answers to frequently asked questions can be found in this repo’s from the original developer [wiki](https://github.com/jpmck/PADD/wiki/FAQ).*
