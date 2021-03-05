@@ -6,7 +6,7 @@ This version requires at raspberypi running BUSTER, Domotics v2020.1 or later an
 
 PADD (formerly Chronometer2) is a more expansive version of the original chronometer.sh that is included with [Pi-Hole](https://pi-hole.net). PADD provides in-depth information about your Pi-hole.
 
-![PADD](https://jpmck.com/img/blog/padd.png)
+![PADD](https://www.roerig-dalgaard.dk/irc/padd.jpg)
 
 ## Setup PADD
 *More in-depth information about setting up PADD can be found in this repo’s [wiki](https://github.com/jpmck/PADD/wiki/Setup).*
