@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(40)"
+padd_build="(41)"
 
 
 # Settings for Domoticz
@@ -721,15 +721,19 @@ PrintNetworkInformation() {
     fi
   else
     CleanEcho "${bold_text}NETWORK ========================================================================${reset_text}"
-    CleanPrintf " %-10s%-19s\e[0K\\n" "Hostname:" "${full_hostname}"
-    CleanPrintf " %-10s%-19s %-10s%-29s\e[0K\\n" "IPv4 Adr:" "${IPV4_ADDRESS}" "IPv6 Adr:" "${IPV6_ADDRESS}"
-    CleanEcho "DNS ============================================================================"
-    CleanPrintf " %-10s%-39s\e[0K\\n" "Servers:" "${dns_information}"
-    CleanPrintf " %-10s${dnssec_heatmap}%-19s${reset_text} %-20s${conditional_forwarding_heatmap}%-9s${reset_text}\e[0K\\n" "DNSSEC:" "${dnssec_status}" "Conditional Fwding:" "${conditional_forwarding_status}"
+    CleanPrintf " %-10s%%-19s %-10s%-30s\e[0K\\n" "Hostname:" "${full_hostname}" "DNS Servers:" "${dns_information}"
+    CleanPrintf " %-10s%-19s %-10s%-30s\e[0K\\n" "IPv4 Adr:" "${IPV4_ADDRESS}" "IPv6 Adr:" "${IPV6_ADDRESS}"
+    # CleanEcho "DNS ============================================================================"
+    # CleanPrintf " %-10s%-39s\e[0K\\n" "Servers:" "${dns_information}"
+    # CleanPrintf " %-10s${dnssec_heatmap}%-19s${reset_text} %-20s${conditional_forwarding_heatmap}%-9s${reset_text}\e[0K\\n" "DNSSEC:" "${dnssec_status}" "Conditional Fwding:" "${conditional_forwarding_status}"
 
     CleanEcho "DHCP ==========================================================================="
     CleanPrintf " %-10s${dhcp_heatmap}%-19s${reset_text} %-10s${dhcp_ipv6_heatmap}%-9s${reset_text}\e[0K\\n" "DHCP:" "${dhcp_status}" "IPv6 Spt:" "${dhcp_ipv6_status}"
     CleanPrintf "%s\e[0K\\n" "${dhcp_info}"
+    
+    CleanEcho "Monitors ======================================================================="
+    CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm1t}" "${alarm1c}" "${alarm1r}" "${alarm2t}" "${alarm2c}" "${alarm2r}"
+    CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm3t}" "${alarm3c}" "${alarm3r}" "${alarm4t}" "${alarm4c}" "${alarm4r}"
   fi
 }
 
@@ -1166,6 +1170,66 @@ PrintDZdata() {
     CleanPrintf "\e[0K\\n "
     CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
     CleanPrintf "\e[0K\\n"
+    
+    if [ ! -f $alarm1f ] 
+    then
+        alarm1c=${check_box_good}
+        alarm1r="OK"
+    else
+        if [ "$alarm1f" != "" ] 
+        then 
+             alarm1c=${check_box_bad}
+             alarm1r="FAILED"
+        else
+            alarm1c=" "
+            alarm1r=" "
+        fi
+    fi
+    
+    if [ ! -f $alarm2f ] 
+    then
+        alarm2c=${check_box_good}
+        alarm2r="OK"
+    else
+        if [ "$alarm2f" != "" ] 
+        then 
+             alarm2c=${check_box_bad}
+             alarm2r="FAILED"
+        else
+            alarm2c=" "
+            alarm2r=" "
+        fi
+    fi
+    
+    if [ ! -f $alarm3f ] 
+    then
+        alarm3c=${check_box_good}
+        alarm3r="OK"
+    else
+        if [ "$alarm3f" != "" ] 
+        then 
+             alarm3c=${check_box_bad}
+             alarm3r="FAILED"
+        else
+            alarm3c=" "
+            alarm3r=" "
+        fi
+    fi
+    
+    if [ ! -f $alarm4f ] 
+    then
+        alarm4c=${check_box_good}
+        alarm4r="OK"
+    else
+        if [ "$alarm4f" != "" ] 
+        then 
+             alarm4c=${check_box_bad}
+             alarm4r="FAILED"
+        else
+            alarm4c=" "
+            alarm4r=" "
+        fi
+    fi
 }
 
 NormalPADD() {
