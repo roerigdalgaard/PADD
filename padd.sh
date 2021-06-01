@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(41)"
+padd_build="(42)"
 
 
 # Settings for Domoticz
@@ -1146,7 +1146,7 @@ PrintDZdata() {
     fi
     sshcount=$(netstat -tn | grep :22 | grep ESTABLISHED | wc -l)
 
-    disk_percent=$(df -k | grep /dev/root | awk '{printf "%5.2f",$3/$2*100.0}')
+    disk_percent=$(df -k | grep /dev/root | awk '{printf "%5.1f",$3/$2*100.0}')
   
     if [[ "$dzhost" != "" ]]; then
         wget -q --delete-after "http://$dzhost/json.htm?type=command&param=udevice&idx=$idxvpn&svalue=$count"
@@ -1165,11 +1165,6 @@ PrintDZdata() {
     else 
         sshcount="${green_text}$sshcount ${reset_text}"
     fi
-    
-    disk_percent="${green_text}$disk_percent%${reset_text}"
-    CleanPrintf "\e[0K\\n "
-    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
-    CleanPrintf "\e[0K\\n"
     
     if [ ! -f $alarm1f ] 
     then
@@ -1230,6 +1225,16 @@ PrintDZdata() {
             alarm4r=" "
         fi
     fi
+    
+    disk_heatmap=$(HeatmapGenerator "${disk_percent}")
+    disk_bar=$(BarGenerator "${disk_percent}" 10)
+    # disk_percent="${green_text}$disk_percent%${reset_text}"
+    disk_percent="$disk_percent%"
+    
+    CleanPrintf "\e[0K\\n "
+    # CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
+    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free:[${disk_heatmap}%-9s${reset_text}]%-4s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
+    #CleanPrintf "\e[0K\\n"
 }
 
 NormalPADD() {
