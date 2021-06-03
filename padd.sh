@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(42)"
+padd_build="(44)"
 
 
 # Settings for Domoticz
@@ -673,13 +673,13 @@ PrintLogo() {
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     #CleanEcho ""
      if [ "$osupdate" == "Searching" ]; then
-        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${yellow_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${yellow_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
      elif [ "$osupdate" == "Patching" ]; then
-        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${green_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${green_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
      elif [ "$osupdate" != "0" ]; then
-        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${bold_text}${red_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${red_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
     else  
-        CleanPrintf "|${bold_text}${yellow_text}   $clock ${reset_text}        ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
     fi
   fi
 }
@@ -721,8 +721,8 @@ PrintNetworkInformation() {
     fi
   else
     CleanEcho "${bold_text}NETWORK ========================================================================${reset_text}"
-    CleanPrintf " %-10s%%-19s %-10s%-30s\e[0K\\n" "Hostname:" "${full_hostname}" "DNS Servers:" "${dns_information}"
-    CleanPrintf " %-10s%-19s %-10s%-30s\e[0K\\n" "IPv4 Adr:" "${IPV4_ADDRESS}" "IPv6 Adr:" "${IPV6_ADDRESS}"
+    CleanPrintf " %-10s%-19s%-10s%-30s\e[0K\\n" "Hostname:" "${full_hostname}" "DNS Servers:" "${dns_information}"
+    CleanPrintf " %-10s%-19s%-10s%-30s\e[0K\\n" "IPv4 Adr:" "${IPV4_ADDRESS}" "IPv6 Adr:" "${IPV6_ADDRESS}"
     # CleanEcho "DNS ============================================================================"
     # CleanPrintf " %-10s%-39s\e[0K\\n" "Servers:" "${dns_information}"
     # CleanPrintf " %-10s${dnssec_heatmap}%-19s${reset_text} %-20s${conditional_forwarding_heatmap}%-9s${reset_text}\e[0K\\n" "DNSSEC:" "${dnssec_status}" "Conditional Fwding:" "${conditional_forwarding_status}"
@@ -839,10 +839,10 @@ PrintSystemInformation() {
   else
     CleanEcho "${bold_text}SYSTEM =========================================================================${reset_text}"
     # Uptime and memory
-    CleanPrintf " %-10s%-39s %-10s[${memory_heatmap}%-10s${reset_text}] %-6s\\n" "Uptime:" "${system_uptime}" "Memory:" "${memory_bar}" "${memory_percent}%"
+    CleanPrintf " %-10s%-39s %-10s[${memory_heatmap}%-10s${reset_text}] %5s\\n" "Uptime:" "${system_uptime}" "Memory:" "${memory_bar}" "${memory_percent}%"
 
     # CPU temp, load, percentage
-    CleanPrintf " %-10s${temp_heatmap}%-10s${reset_text} %-10s${cpu_load_1_heatmap}%-4s${reset_text}, ${cpu_load_5_heatmap}%-4s${reset_text}, ${cpu_load_15_heatmap}%-7s${reset_text} %-10s[${memory_heatmap}%-10s${reset_text}] %-6s" "CPU Temp:" "${temperature}" "CPU Load:" "${cpu_load[0]}" "${cpu_load[1]}" "${cpu_load[2]}" "CPU Load:" "${cpu_bar}" "${cpu_percent}%"
+    CleanPrintf " %-10s${temp_heatmap}%-10s${reset_text} %-10s${cpu_load_1_heatmap}%-4s${reset_text}, ${cpu_load_5_heatmap}%-4s${reset_text}, ${cpu_load_15_heatmap}%-7s${reset_text} %-10s[${memory_heatmap}%-10s${reset_text}] %5s" "CPU Temp:" "${temperature}" "CPU Load:" "${cpu_load[0]}" "${cpu_load[1]}" "${cpu_load[2]}" "CPU Load:" "${cpu_bar}" "${cpu_percent}%"
   fi
 }
 
@@ -1233,8 +1233,8 @@ PrintDZdata() {
     
     CleanPrintf "\e[0K\\n "
     # CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
-    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free:[${disk_heatmap}%-9s${reset_text}]%-4s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
-    #CleanPrintf "\e[0K\\n"
+    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
+    CleanPrintf "\e[0K\\n"
 }
 
 NormalPADD() {
@@ -1278,16 +1278,16 @@ NormalPADD() {
     # sleep 5
     if [[ "$padd_size" == "mega" ]] ; then 
       tput cup 3 0
-      echo "/"
+      echo "${white_text}(${bold_text}${yellow_text}4${reset_text})" # "/"
       sleep 2
       tput cup 3 0
-      echo "-"
+      echo "${white_text}(${bold_text}${yellow_text}3${reset_text})" #"-"
       sleep 2
       tput cup 3 0
-      echo "\\"
+      echo "${white_text}(${bold_text}${yellow_text}2${reset_text})" #"\\"
       sleep 2
       tput cup 3 0
-      echo "|"
+      echo "${white_text}(${bold_text}${yellow_text}1${reset_text})" #"|"
       #sleep 2
       #tput cup 3 0
       #echo "+"
