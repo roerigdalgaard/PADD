@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(46)"
+padd_build="(47)"
 
 
 # Settings for Domoticz
@@ -673,9 +673,9 @@ CleanPrintf() {
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     #CleanEcho ""
      if [ "$osupdate" == "Searching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${yellow_text}$osupdate${reset_text}] ${bold_text}${yellow_text} for OS Updates ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${yellow_text}$osupdate for OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" == "Patching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${green_text}$osupdate${reset_text}] ${bold_text}${green_text} OS Updates ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${green_text}$osupdate with OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" != "0" ]; then
         CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${red_text}$osupdate${reset_text}]  ${bold_text}${red_text}OS Updates pending ${reset_text}\e[0K\\n"
     else  
