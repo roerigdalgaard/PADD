@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.2.2"
-padd_build="(44)"
+padd_build="(46)"
 
 
 # Settings for Domoticz
@@ -52,7 +52,7 @@ dim_text=$(tput dim)
 
 # CHECK BOXES
 check_box_good="[${green_text}✓${reset_text}]"       # Good
-check_box_bad="[${red_text}✗${reset_text}]"          # Bad
+check_box_bad="[${bold_text}${red_text}✗${reset_text}]"          # Bad
 check_box_question="[${yellow_text}?${reset_text}]"  # Question / ?
 check_box_info="[${yellow_text}i${reset_text}]"      # Info / i
 
@@ -641,7 +641,7 @@ CleanPrintf() {
   printf "$@"
 }
 
-PrintLogo() {
+ PrintLogo() {
   clock=$(date +%H:%M:%S)
   # osupdate=$(sudo apt-get -s upgrade | grep opgraderes | awk '{print $1}')
   osupdate=$(more /home/pi/UpdateNeeded.txt)
@@ -673,11 +673,11 @@ PrintLogo() {
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     #CleanEcho ""
      if [ "$osupdate" == "Searching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${yellow_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${yellow_text}$osupdate${reset_text}] ${bold_text}${yellow_text} for OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" == "Patching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${green_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${green_text}$osupdate${reset_text}] ${bold_text}${green_text} OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" != "0" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${red_text}[$osupdate] OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${red_text}$osupdate${reset_text}]  ${bold_text}${red_text}OS Updates pending ${reset_text}\e[0K\\n"
     else  
         CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
     fi
