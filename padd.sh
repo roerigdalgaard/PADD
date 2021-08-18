@@ -17,8 +17,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="v3.2.2"
-padd_build="(47)"
+padd_version="v3.6.1"
+padd_build="(48)"
 
 
 # Settings for Domoticz
@@ -1002,6 +1002,24 @@ CheckConnectivity() {
   fi
 }
 
+# Credit: https://stackoverflow.com/a/46324904
+json_extract() {
+    local key=$1
+    local json=$2
+
+    local string_regex='"([^"\]|\\.)*"'
+    local number_regex='-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?'
+    local value_regex="${string_regex}|${number_regex}|true|false|null"
+    local pair_regex="\"${key}\"[[:space:]]*:[[:space:]]*(${value_regex})"
+
+    if [[ ${json} =~ ${pair_regex} ]]; then
+        echo $(sed 's/^"\|"$//g' <<< "${BASH_REMATCH[1]}")
+    else
+        return 1
+    fi
+}
+
+
 ########################################## MAIN FUNCTIONS ##########################################
 
 OutputJSON() {
@@ -1068,13 +1086,13 @@ StartupRoutine(){
 
     # Get our information for the first time
     echo "- Gathering system info."
-    GetSystemInformation "mini"
+    GetSystemInformation "$1"
     echo "- Gathering Pi-hole info."
-    GetSummaryInformation "mini"
+    GetSummaryInformation "$1"
     echo "- Gathering network info."
-    GetNetworkInformation "mini"
+    GetNetworkInformation "$1"
     echo "- Gathering version info."
-    GetVersionInformation "mini"
+    GetVersionInformation "$1"
     echo "  - Core v$core_version, Web v$web_version"
     echo "  - FTL v$ftl_version, PADD $padd_version"
     echo "  - $version_status"
