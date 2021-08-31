@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.6.1"
-padd_build="(51)"
+padd_build="(51.1)"
 
 
 # Settings for Domoticz
