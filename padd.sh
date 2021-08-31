@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.6.1"
-padd_build="(49)"
+padd_build="(50)"
 
 
 # Settings for Domoticz
@@ -802,7 +802,7 @@ PrintNetworkInformation() {
     CleanPrintf " %-10s${dhcp_heatmap}%-19s${reset_text} %-10s${dhcp_ipv6_heatmap}%-9s${reset_text}\e[0K\\n" "DHCP:" "${dhcp_status}" "IPv6 Spt:" "${dhcp_ipv6_status}"
     CleanPrintf "%s\e[0K\\n" "${dhcp_info}"
     
-    CleanEcho "Monitors ======================================================================="
+    CleanEcho "Monitors ======================================================================"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm1t}" "${alarm1c}" "${alarm1r}" "${alarm2t}" "${alarm2c}" "${alarm2r}"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm3t}" "${alarm3c}" "${alarm3r}" "${alarm4t}" "${alarm4c}" "${alarm4r}"
   fi
@@ -878,7 +878,7 @@ PrintPiholeStats() {
       CleanPrintf " %-10s%-39s\e[0K\\n" "Top Clnt:" "${top_client}"
     fi
   else
-    CleanEcho "${bold_text}STATS =========================================================================${reset_text}"
+    CleanEcho "${bold_text}STATS ========================================================================${reset_text}"
     CleanPrintf " %-10s%-19s %-10s[%-40s] %-5s\e[0K\\n" "Blocking:" "${domains_being_blocked} domains" "Piholed:" "${ads_blocked_bar}" "${ads_percentage_today}%"
     CleanPrintf " %-10s%-30s%-29s\e[0K\\n" "Clients:" "${clients}" " ${ads_blocked_today} out of ${dns_queries_today} queries"
     CleanPrintf " %-10s%-39s\e[0K\\n" "Latest:" "${latest_blocked}"
