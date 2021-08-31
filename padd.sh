@@ -1350,7 +1350,7 @@ PrintDZdata() {
     CleanPrintf "\e[0K\\n "
     # CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
     CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
-    CleanPrintf "\e[0K\\n"
+    #CleanPrintf "\e[0K\\n"
 }
 
 NormalPADD() {
