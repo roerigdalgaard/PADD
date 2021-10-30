@@ -18,7 +18,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.6.2"
-padd_build="(54)"
+padd_build="(55)"
 
 
 # Settings for Domoticz
@@ -1327,13 +1327,25 @@ PrintDZdata() {
     
     if [ ! -f $alarm4f ] 
     then
-        alarm4c=${check_box_good}
-        alarm4r=$alarm4o
+        if [ $alarm4v = 0 ] 
+             then
+                  alarm4c=${check_box_bad}
+                  alarm4r=$alarm4e
+             else
+                 alarm4c=${check_box_good}
+                  alarm4r=$alarm4o
+             fi
     else
         if [ "$alarm4f" != "" ] 
         then 
-             alarm4c=${check_box_bad}
-             alarm4r=$alarm4e
+             if [ $alarm4v = 1 ] 
+             then
+                  alarm4c=${check_box_bad}
+                  alarm4r=$alarm4e
+             else
+                 alarm4c=${check_box_good}
+                  alarm4r=$alarm4o
+             fi
         else
             alarm4c=" "
             alarm4r=" "
