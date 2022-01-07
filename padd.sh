@@ -17,8 +17,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="v3.6.2"
-padd_build="(55)"
+padd_version="v3.6.3"
+padd_build="(56)"
 
 
 # Settings for Domoticz
@@ -53,8 +53,8 @@ dim_text=$(tput dim)
 # CHECK BOXES
 check_box_good="[${green_text}✓${reset_text}]"       # Good
 check_box_bad="[${bold_text}${red_text}✗${reset_text}]"          # Bad
-check_box_question="[${yellow_text}?${reset_text}]"  # Question / ?
-check_box_info="[${yellow_text}i${reset_text}]"      # Info / i
+check_box_question="[${bold_text}${yellow_text}?${reset_text}]"  # Question / ?
+check_box_info="[${bold_text}${yellow_text}i${reset_text}]"      # Info / i
 
 # PICO STATUSES
 pico_status_ok="${check_box_good} Sys. OK"
@@ -471,7 +471,7 @@ GetPiholeInformation() {
   # Get Pi-hole status
   pihole_web_status=$(pihole status web)
 
-  if [[ ${pihole_web_status} == 1 ]]; then
+  if [[ ${pihole_web_status} -ge 1 ]]; then
     pihole_status="Active"
     pihole_heatmap=${green_text}
     pihole_check_box=${check_box_good}
