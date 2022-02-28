@@ -17,8 +17,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="v3.6.4"
-padd_build="(56)"
+padd_version="v3.6.6"
+padd_build="(57)"
 
 
 # Settings for Domoticz
@@ -239,6 +239,8 @@ GetSystemInformation() {
   # CPU temperature
   if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
     cpu=$(</sys/class/thermal/thermal_zone0/temp)
+  elif [ -f /sys/class/hwmon/hwmon0/temp1_input ]; then
+    cpu=$(</sys/class/hwmon/hwmon0/temp1_input)
   else
     cpu=0
   fi
@@ -675,6 +677,7 @@ GetVersionInformation() {
       echo "mini_status_=\"$mini_status_\""
       echo "tiny_status_=\"$tiny_status_\""        
       echo "full_status_=\"$full_status_\""
+      echo "mega_status=\"$mega_status\""
     } >> ./piHoleVersion
 
     # there's a file now
@@ -1177,14 +1180,13 @@ StartupRoutine(){
     fi
 
     # Get our information for the first time
-    echo "- Gathering system info."
-    GetSystemInformation "$1"
+    GetSystemInformation "mini"
     echo "- Gathering Pi-hole info."
-    GetSummaryInformation "$1"
+    GetSummaryInformation "mini"
     echo "- Gathering network info."
-    GetNetworkInformation "$1"
+    GetNetworkInformation "mini"
     echo "- Gathering version info."
-    GetVersionInformation "$1"
+    GetVersionInformation "mini"
     echo "  - Core v$core_version, Web v$web_version"
     echo "  - FTL v$ftl_version, PADD $padd_version"
     echo "  - $version_status"
