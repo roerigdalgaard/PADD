@@ -16,7 +16,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.6.7"
-padd_build="(58)"
+padd_build="(59)"
 
 
 # Settings for Domoticz
@@ -1364,7 +1364,7 @@ PrintDZdata() {
     
     CleanPrintf "\e[0K\\n "
     # CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
-    CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
+    CleanPrintf "VPNcount: %-18s SSHcount: %-28s Disk free:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
     CleanPrintf "\e[0K\\n"
 }
 
