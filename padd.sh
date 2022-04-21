@@ -16,7 +16,7 @@ LC_NUMERIC=C
 
 # VERSION
 padd_version="v3.6.7"
-padd_build="(59)"
+padd_build="(60)"
 
 
 # Settings for Domoticz
@@ -540,7 +540,7 @@ GetVersionInformation() {
     read -r -a core_versions <<< "$(pihole -v -p)"
     core_version=$(echo "${core_versions[3]}" | tr -d '\r\n[:alpha:]')
     core_version_latest=${core_versions[5]//)}
-
+    out_of_date_flag=""
     if [[ "${core_version_latest}" == "ERROR" ]]; then
       core_version_latest=${core_version}
       core_version_heatmap=${yellow_text}
