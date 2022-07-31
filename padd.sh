@@ -15,7 +15,8 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="v3.6.7"
+padd_version="v3.7.1"
+padd_version_latest="v3.7.1"
 padd_build="(60)"
 
 
@@ -600,7 +601,8 @@ GetVersionInformation() {
 
     # PADD version information...
     # Fix 3.2.2padd_version_latest=$(curl -sI https://github.com/jpmck/PADD/releases/latest | awk -F / 'tolower($0) ~ /^location:/ {print $NF; exit}' | tr -d '\r\n[:alpha:]')
-    padd_version_latest=$(json_extract tag_name "$(curl -s 'https://api.github.com/repos/pi-hole/PADD/releases/latest' 2> /dev/null)")
+    
+    # padd_version_latest=$(json_extract tag_name "$(curl -s 'https://api.github.com/repos/pi-hole/PADD/releases/latest' 2> /dev/null)")
 
     # is PADD up-to-date?
     if [[ "${padd_version_latest}" == "" ]]; then
