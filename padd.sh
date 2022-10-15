@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v3.7.1"
 padd_version_latest="v3.7.1"
-padd_build="(60)"
+padd_build="(61)"
 
 
 # Settings for Domoticz
@@ -115,7 +115,8 @@ padd_logo_retro_3="${bold_text}${green_text}|   ${red_text}/${yellow_text}-${gre
 
 GetFTLData() {
     local ftl_port LINE
-    ftl_port=$(cat /run/pihole-FTL.port 2> /dev/null)
+    # ftl_port=$(cat /run/pihole-FTL.port 2> /dev/null)
+    ftl_port=$(getFTLAPIPort)
     if [[ -n "$ftl_port" ]]; then
         # Open connection to FTL
         exec 3<>"/dev/tcp/127.0.0.1/$ftl_port"
@@ -1116,6 +1117,28 @@ json_extract() {
      else
         return 1
     fi
+}
+
+# get the Telnet API Port FTL is using by parsing `pihole-FTL.conf`
+# same implementation as https://github.com/pi-hole/pi-hole/pull/4945
+getFTLAPIPort(){
+    local FTLCONFFILE="/etc/pihole/pihole-FTL.conf"
+    local DEFAULT_FTL_PORT=4711
+    local ftl_api_port
+
+    if [ -s "$FTLCONFFILE" ]; then
+        # if FTLPORT is not set in pihole-FTL.conf, use the default port
+        ftl_api_port="$({ grep '^FTLPORT=' "${FTLCONFFILE}" || echo "${DEFAULT_FTL_PORT}"; } | cut -d'=' -f2-)"
+        # Exploit prevention: set the port to the default port if there is malicious (non-numeric)
+        # content set in pihole-FTL.conf
+        expr "${ftl_api_port}" : "[^[:digit:]]" > /dev/null && ftl_api_port="${DEFAULT_FTL_PORT}"
+    else
+        # if there is no pihole-FTL.conf, use the default port
+        ftl_api_port="${DEFAULT_FTL_PORT}"
+    fi
+
+    echo "${ftl_api_port}"
+
 }
 
 
