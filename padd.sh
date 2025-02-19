@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v3.7.1"
 padd_version_latest="v3.7.1"
-padd_build="(61)"
+padd_build="(63)"
 
 
 # Settings for Domoticz
@@ -402,7 +402,8 @@ GetNetworkInformation() {
   # Is Pi-Hole acting as the DHCP server?
   if [[ "${DHCP_ACTIVE}" == "true" ]]; then
     dhcp_status="Enabled"
-    dhcp_info=" Range:    ${DHCP_START} - ${DHCP_END}"
+    dhcp_leasecount=$(wc -l /etc/pihole/dhcp.leases  | awk '{print $1}')
+    dhcp_info=" Range:    ${DHCP_START} - ${DHCP_END} Leases: ${dhcp_leasecount}"
     dhcp_heatmap=${green_text}
     dhcp_check_box=${check_box_good}
 
@@ -1389,7 +1390,7 @@ PrintDZdata() {
     
     CleanPrintf "\e[0K\\n "
     # CleanPrintf "VPNcount: %-20s SSHcount: %-30s Disk free: %-15s" "${count}" "${sshcount}" "${disk_percent}"
-    CleanPrintf "VPNcount: %-18s SSHcount: %-28s Disk free:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
+    CleanPrintf "VPNcount: %-18s SSHcount: %-28s Disk used:[${disk_heatmap}%-9s${reset_text}]%5s" "${count}" "${sshcount}" "${disk_bar}" "${disk_percent}"
     CleanPrintf "\e[0K\\n"
 }
 
