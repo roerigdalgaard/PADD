@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v4.0.MRD"
 padd_version_latest="v4.0.MRD"
-padd_build="(67)"
+padd_build="(68)"
 
 
 # Settings for Domoticz
@@ -115,7 +115,7 @@ padd_logo_retro_3="${bold_text}${green_text}|   ${red_text}/${yellow_text}-${gre
 
 Authenticate() {
   echo "Checking FTL and password"
-  sessionResponse="$(curl -skS -X POST "${API_URL}auth" --user-agent "PADD ${padd_version}" --data "{\"password\":\"${password}\"}" )"
+  sessionResponse="$(curl -skS -X POST "${API_URL}auth" --user-agent "PADD ${padd_version}${padd_build}" --data "{\"password\":\"${password}\"}" )"
 
   if [ -z "${sessionResponse}" ]; then
     echo "No response from FTL server. Please check connectivity and use the options to set the API URL"
@@ -333,7 +333,7 @@ GetSummaryInformation() {
 
   domains_being_blocked_raw=$(echo "${ftl_info}" | jq .ftl.database.gravity 2>/dev/null)
   domains_being_blocked=$(printf "%.f" "${domains_being_blocked_raw}")
-
+  
   dns_queries_today_raw=$(echo "$summary" | jq .queries.total 2>/dev/null)
   dns_queries_today=$(printf "%.f" "${dns_queries_today_raw}")
 
@@ -365,6 +365,15 @@ GetSummaryInformation() {
   top_blocked=$(truncateString "$top_blocked_raw" 68)
   top_domain=$(truncateString "$top_domain_raw" 68)
   top_client=$(truncateString "$top_client_raw" 68)
+  
+  LC_ALL=da_DK.UTF-8
+  LC_NUMERIC=da_DK.UTF-8
+  domains_being_blocked1=$(printf "%'d" $domains_being_blocked_raw)
+  dns_queries_today1=$(printf "%'d" "${dns_queries_today_raw}")
+  ads_blocked_today1=$(printf "%'d" "${ads_blocked_today_raw}")
+  LC_ALL=C
+  LC_NUMERIC=C
+  
 }
 
 GetSummaryInformation1() {
@@ -1113,15 +1122,15 @@ PrintPiholeStats() {
     fi
   else
     CleanEcho "${bold_text}STATS =========================================================================${reset_text}"
-    CleanPrintf " %-10s%-19s %-10s[%-40s] %-5s\e[0K\\n" "Blocking:" "${domains_being_blocked} domains" "Piholed:" "${ads_blocked_bar}" "${ads_percentage_today}%"
-    CleanPrintf " %-10s%-30s%-29s\e[0K\\n" "Clients:" "${clients}" " ${ads_blocked_today} out of ${dns_queries_today} queries"
+    CleanPrintf " %-10s%-19s %-10s[%-40s] %-5s\e[0K\\n" "Blocking:" "${domains_being_blocked1} domains" "Piholed:" "${ads_blocked_bar}" "${ads_percentage_today}%"
+    CleanPrintf " %-10s%-30s%-29s\e[0K\\n" "Clients:" "${clients}" " ${ads_blocked_today1} out of ${dns_queries_today1} queries"
     CleanPrintf " %-10s%-39s\e[0K\\n" "Latest:" "${latest_blocked}"
     CleanPrintf " %-10s%-39s\e[0K\\n" "Top Ad:" "${top_blocked}"
     CleanPrintf " %-10s%-39s\e[0K\\n" "Top Dmn:" "${top_domain}"
     CleanPrintf " %-10s%-39s\e[0K\\n" "Top Clnt:" "${top_client}"
     CleanEcho "FTL ==========================================================================="
     CleanPrintf " %-10s%-9s %-10s%-9s %-10s%-9s\e[0K\\n" "PID:" "${ftlPID}" "CPU Use:" "${ftl_cpu}%" "Mem. Use:" "${ftl_mem_percentage}%"
-    CleanPrintf " %-10s%-69s\e[0K\\n" "DNSCache:" "${cache_inserts} insertions, ${cache_deletes} deletions, ${cache_size} total entries"
+    CleanPrintf " %-10s%-69s\e[0K\\n" "DNSCache:" "${cache_inserts} insertions, ${cache_evictions} deletions, ${cache_size} total entries"
   fi
 }
 
