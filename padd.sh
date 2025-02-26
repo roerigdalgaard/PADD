@@ -15,9 +15,9 @@ LC_NUMERIC=C
 ############################################ VARIABLES #############################################
 
 # VERSION
-padd_version="v3.7.1"
-padd_version_latest="v3.7.1"
-padd_build="(63)"
+padd_version="v4.0.MRD"
+padd_version_latest="v4.0.MRD"
+padd_build="(67)"
 
 
 # Settings for Domoticz
@@ -111,9 +111,183 @@ padd_logo_retro_1="${bold_text} ${yellow_text}_${green_text}_      ${blue_text}_
 padd_logo_retro_2="${bold_text}${yellow_text}|${green_text}_${blue_text}_${cyan_text}) ${red_text}/${yellow_text}\\ ${blue_text}|  ${red_text}\\${yellow_text}|  ${cyan_text}\\  ${reset_text}"
 padd_logo_retro_3="${bold_text}${green_text}|   ${red_text}/${yellow_text}-${green_text}-${blue_text}\\${cyan_text}|${magenta_text}_${red_text}_${yellow_text}/${green_text}|${blue_text}_${cyan_text}_${magenta_text}/  ${reset_text}"
 
-############################################# GETTERS ##############################################
+############################################# FTL ##################################################
+
+Authenticate() {
+  echo "Checking FTL and password"
+  sessionResponse="$(curl -skS -X POST "${API_URL}auth" --user-agent "PADD ${padd_version}" --data "{\"password\":\"${password}\"}" )"
+
+  if [ -z "${sessionResponse}" ]; then
+    echo "No response from FTL server. Please check connectivity and use the options to set the API URL"
+    echo "Usage: $0 [--server <domain|IP>]"
+    exit 1
+  fi
+	# obtain validity and session ID from session response
+	validSession=$(echo "${sessionResponse}"| jq .session.valid 2>/dev/null)
+  #validSession=false
+	SID=$(echo "${sessionResponse}"| jq --raw-output .session.sid 2>/dev/null)
+  echo "Vallid session ${validSession}"
+  echo "SID ${SID}"
+}
+
+TestAPIAvailability() {
+
+    local chaos_api_list availabilityResponse cmdResult digReturnCode
+
+    # Query the API URLs from FTL using CHAOS TXT
+    # The result is a space-separated enumeration of full URLs
+    # e.g., "http://localhost:80/api" or "https://domain.com:443/api"
+    if [ -z "${SERVER}" ] || [ "${SERVER}" = "localhost" ] || [ "${SERVER}" = "127.0.0.1" ]; then
+        # --server was not set or set to local, assuming we're running locally
+        cmdResult="$(dig +short chaos txt local.api.ftl @localhost 2>&1; echo $?)"
+    else
+        # --server was set, try to get response from there
+        cmdResult="$(dig +short chaos txt domain.api.ftl @"${SERVER}" 2>&1; echo $?)"
+    fi
+
+    # Gets the return code of the dig command (last line)
+    # We can't use${cmdResult##*$'\n'*} here as $'..' is not POSIX
+    digReturnCode="$(echo "${cmdResult}" | tail -n 1)"
+
+    if [ ! "${digReturnCode}" = "0" ]; then
+        # If the query was not successful
+        moveXOffset;  echo "API not available. Please check server address and connectivity"
+        exit 1
+    else
+      # Dig returned 0 (success), so get the actual response (first line)
+      chaos_api_list="$(echo "${cmdResult}" | head -n 1)"
+    fi
+
+    # Iterate over space-separated list of URLs
+    while [ -n "${chaos_api_list}" ]; do
+        # Get the first URL
+        API_URL="${chaos_api_list%% *}"
+        # Strip leading and trailing quotes
+        API_URL="${API_URL%\"}"
+        API_URL="${API_URL#\"}"
+
+        # Test if the API is available at this URL
+        availabilityResponse=$(curl -skS -o /dev/null -w "%{http_code}" "${API_URL}auth")
+
+        # Test if http status code was 200 (OK) or 401 (authentication required)
+        if [ ! "${availabilityResponse}" = 200 ] && [ ! "${availabilityResponse}" = 401 ]; then
+            # API is not available at this port/protocol combination
+            API_PORT=""
+        else
+            # API is available at this URL combination
+
+            if [ "${availabilityResponse}" = 200 ]; then
+                # API is available without authentication
+                needAuth=false
+            fi
+
+            break
+        fi
+
+        # Remove the first URL from the list
+        local last_api_list
+        last_api_list="${chaos_api_list}"
+        chaos_api_list="${chaos_api_list#* }"
+
+        # If the list did not change, we are at the last element
+        if [ "${last_api_list}" = "${chaos_api_list}" ]; then
+            # Remove the last element
+            chaos_api_list=""
+        fi
+    done
+
+    # if API_PORT is empty, no working API port was found
+    if [ -n "${API_PORT}" ]; then
+        moveXOffset; echo "API not available at: ${API_URL}"
+        moveXOffset; echo "Exiting."
+        exit 1
+    fi
+}
+
+LoginAPI() {
+    echo "Run Login API"
+    # Exit early if no authentication is required
+    if [ "${needAuth}" = false ]; then
+        moveXOffset; echo "No password required."
+        return
+    fi
+
+    # Try to read the CLI password (if enabled and readable by the current user)
+    if [ -r /etc/pihole/cli_pw ]; then
+        password=$(cat /etc/pihole/cli_pw)
+        echo "password found in file"
+        # Try to authenticate using the CLI password
+        Authenticate
+    fi
+
+    # If this did not work, ask the user for the password
+    while [ "${validSession}" = false ] || [ -z "${validSession}" ] ; do
+        moveXOffset; echo "Authentication failed."
+
+        # no password was supplied as argument
+        if [ -z "${password}" ]; then
+            moveXOffset; echo "No password supplied. Please enter your password:"
+        else
+            moveXOffset; echo "Wrong password supplied, please enter the correct password:"
+        fi
+
+        # secretly read the password
+        moveXOffset; secretRead; printf '\n'
+
+        # Try to authenticate again
+        Authenticate
+    done
+
+    # Loop exited, authentication was successful
+    moveXOffset; echo "Authentication successful."
+
+}
+
+DeleteSession() {
+    # if a valid Session exists (no password required or successful authenthication) and
+    # SID is not null (successful authenthication only), delete the session
+    if [ "${validSession}" = true ] && [ ! "${SID}" = null ]; then
+        # Try to delete the session. Omit the output, but get the http status code
+        deleteResponse=$(curl -skS -o /dev/null -w "%{http_code}" -X DELETE "${API_URL}auth"  -H "Accept: application/json" -H "sid: ${SID}")
+
+        printf "\n\n"
+        case "${deleteResponse}" in
+            "204") moveXOffset; printf "%b" "Session successfully deleted.\n";;
+            "401") moveXOffset; printf "%b" "Logout attempt without a valid session. Unauthorized!\n";;
+         esac;
+    else
+      # no session to delete, just print a newline for nicer output
+      echo
+    fi
+
+}
 
 GetFTLData() {
+  local response
+  # get the data from querying the API as well as the http status code
+	response=$(curl -skS -w "%{http_code}" -X GET "${API_URL}$1" -H "Accept: application/json" -H "sid: ${SID}" )
+
+  # status are the last 3 characters
+  status=$(printf %s "${response#"${response%???}"}")
+  # data is everything from response without the last 3 characters
+  data=$(printf %s "${response%???}")
+
+  if [ "${status}" = 200 ]; then
+    echo "${data}"
+  elif [ "${status}" = 000 ]; then
+    # connection lost
+    echo "000"
+  elif [ "${status}" = 401 ]; then
+    # unauthorized
+    echo "401"
+  fi
+}
+
+
+
+############################################# GETTERS ##############################################
+
+GetFTLData1() {
     local ftl_port LINE
     # ftl_port=$(cat /run/pihole-FTL.port 2> /dev/null)
     ftl_port=$(getFTLAPIPort)
@@ -145,6 +319,55 @@ GetFTLData() {
 }
 
 GetSummaryInformation() {
+  summary=$(GetFTLData "stats/summary")
+  
+  cache_info=$(GetFTLData "info/metrics")
+  
+  ftl_info=$(GetFTLData "info/ftl")
+  
+  dns_blocking=$(GetFTLData "dns/blocking")
+  
+  clients=$(echo "${ftl_info}" | jq .ftl.clients.active 2>/dev/null)
+
+  blocking_enabled=$(echo "${dns_blocking}" | jq .blocking 2>/dev/null)
+
+  domains_being_blocked_raw=$(echo "${ftl_info}" | jq .ftl.database.gravity 2>/dev/null)
+  domains_being_blocked=$(printf "%.f" "${domains_being_blocked_raw}")
+
+  dns_queries_today_raw=$(echo "$summary" | jq .queries.total 2>/dev/null)
+  dns_queries_today=$(printf "%.f" "${dns_queries_today_raw}")
+
+  ads_blocked_today_raw=$(echo "$summary" | jq .queries.blocked 2>/dev/null)
+  ads_blocked_today=$(printf "%.f" "${ads_blocked_today_raw}")
+
+  ads_percentage_today_raw=$(echo "$summary" | jq .queries.percent_blocked 2>/dev/null)
+  ads_percentage_today=$(printf "%.1f" "${ads_percentage_today_raw}")
+
+  cache_size=$(echo "$cache_info" | jq .metrics.dns.cache.size 2>/dev/null)
+  cache_evictions=$(echo "$cache_info" | jq .metrics.dns.cache.evicted 2>/dev/null)
+  cache_inserts=$(echo "$cache_info"| jq .metrics.dns.cache.inserted 2>/dev/null)
+  
+  latest_blocked_raw=$(GetFTLData "stats/recent_blocked?show=1" | jq --raw-output .blocked[0] 2>/dev/null)
+  
+  top_blocked_raw=$(GetFTLData "stats/top_domains?blocked=true" | jq --raw-output .domains[0].domain 2>/dev/null)
+  
+  top_domain_raw=$(GetFTLData "stats/top_domains" | jq --raw-output .domains[0].domain 2>/dev/null)
+  
+  top_client_raw=$(GetFTLData "stats/top_clients" | jq --raw-output .clients[0].name 2>/dev/null)
+  if [ -z "${top_client_raw}" ]; then
+    # if no hostname was supplied, use IP
+    top_client_raw=$(GetFTLData "stats/top_clients" | jq --raw-output .clients[0].ip 2>/dev/null)
+  fi
+  
+  ads_blocked_bar=$(BarGenerator "$ads_percentage_today" 30 "color")
+
+  latest_blocked=$(truncateString "$latest_blocked_raw" 68)
+  top_blocked=$(truncateString "$top_blocked_raw" 68)
+  top_domain=$(truncateString "$top_domain_raw" 68)
+  top_client=$(truncateString "$top_client_raw" 68)
+}
+
+GetSummaryInformation1() {
   local summary
   local cache_info
   summary=$(GetFTLData "stats")
@@ -212,9 +435,11 @@ GetSummaryInformation() {
       top_client=$(echo "$top_client" | cut -c1-38)"..."
     fi
   elif [[ "$1" = "regular" || "$1" = "slim" ]]; then
-    ads_blocked_bar=$(BarGenerator "$ads_percentage_today" 40 "color")
+    ads_blocked_bar=$(BarGenerator "$ads_percentage_today" 20 "color")
   else
-    ads_blocked_bar=$(BarGenerator "$ads_percentage_today" 30 "color")
+    #ads_blocked_bar=$(BarGenerator "$ads_percentage_today" 20 "color")
+    ads_blocked_bar=$(echo "ADDS BAR")
+    
   fi
 }
 
@@ -403,6 +628,9 @@ GetNetworkInformation() {
   if [[ "${DHCP_ACTIVE}" == "true" ]]; then
     dhcp_status="Enabled"
     dhcp_leasecount=$(wc -l /etc/pihole/dhcp.leases  | awk '{print $1}')
+    dhcp_percent=$(echo $dhcp_leasecount | awk '{printf "%5.1f", (($1+1)/140)*100}')
+    dhcp_bar=$(BarGenerator "${dhcp_percent}" 20)
+    dhcp_heatmap=$(HeatmapGenerator "${dhcp_percent}")
     dhcp_info=" Range:    ${DHCP_START} - ${DHCP_END} Leases: ${dhcp_leasecount}"
     dhcp_heatmap=${green_text}
     dhcp_check_box=${check_box_good}
@@ -806,9 +1034,9 @@ PrintNetworkInformation() {
 
     CleanEcho "DHCP =========================================================================="
     CleanPrintf " %-10s${dhcp_heatmap}%-19s${reset_text} %-10s${dhcp_ipv6_heatmap}%-9s${reset_text}\e[0K\\n" "DHCP:" "${dhcp_status}" "IPv6 Spt:" "${dhcp_ipv6_status}"
-    CleanPrintf "%s\e[0K\\n" "${dhcp_info}"
+    CleanPrintf "%s\e[0K\\n" "${dhcp_info} [${dhcp_heatmap}${dhcp_bar}]${dhcp_percent}%"
     
-    CleanEcho "Monitors ======================================================================="
+    CleanEcho "Monitors ======================================================================"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm1t}" "${alarm1c}" "${alarm1r}" "${alarm2t}" "${alarm2c}" "${alarm2r}"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm3t}" "${alarm3c}" "${alarm3r}" "${alarm4t}" "${alarm4c}" "${alarm4r}"
   fi
@@ -1006,6 +1234,8 @@ BarGenerator() {
 
 # Checks the size of the screen and sets the value of padd_size
 SizeChecker(){
+  console_width=$(tput cols)
+  console_height=$(tput lines)
   # Below Pico. Gives you nothing...
   if [[ "$console_width" -lt "20" || "$console_height" -lt "10" ]]; then
     # Nothing is this small, sorry
@@ -1038,6 +1268,9 @@ SizeChecker(){
   else
     padd_size="mega"
   fi
+  # Center the output (default position)
+    xOffset="$(( (console_width - width) / 2 ))"
+    yOffset="$(( (console_height - height) / 2 ))"
 }
 
 CheckConnectivity() {
@@ -1124,7 +1357,8 @@ json_extract() {
 # same implementation as https://github.com/pi-hole/pi-hole/pull/4945
 getFTLAPIPort(){
     local FTLCONFFILE="/etc/pihole/pihole-FTL.conf"
-    local DEFAULT_FTL_PORT=4711
+    #local DEFAULT_FTL_PORT=4711
+    local DEFAULT_FTL_PORT=8080
     local ftl_api_port
 
     if [ -s "$FTLCONFFILE" ]; then
@@ -1142,6 +1376,120 @@ getFTLAPIPort(){
 
 }
 
+# converts a given version string e.g. v3.7.1 to 3007001000 to allow for easier comparison of multi digit version numbers
+# credits https://apple.stackexchange.com/a/123408
+VersionConverter() {
+  echo "$@" | tr -d '[:alpha:]' | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+}
+
+moveYOffset(){
+    # moves the cursor yOffset-times down
+    # https://vt100.net/docs/vt510-rm/CUD.html
+    # this needs to be guarded, because if the amount is 0, it is adjusted to 1
+    # https://terminalguide.namepad.de/seq/csi_cb/
+
+    #if [ "${yOffset}" -gt 0 ]; then
+    #    printf '\e[%sB' "${yOffset}"
+    #fi
+    echo ""
+}
+
+moveXOffset(){
+    # moves the cursor xOffset-times to the right
+    # https://vt100.net/docs/vt510-rm/CUF.html
+    # this needs to be guarded, because if the amount is 0, it is adjusted to 1
+    # https://terminalguide.namepad.de/seq/csi_cb/
+
+    #if [ "${xOffset}" -gt 0 ]; then
+    #    printf '\e[%sC' "${xOffset}"
+    #fi
+    echo ""
+}
+
+# Remove undesired strings from sys_model variable - used in GetSystemInformation() function
+filterModel() {
+    FILTERLIST="To be filled by O.E.M.|Not Applicable|System Product Name|System Version|Undefined|Default string|Not Specified|Type1ProductConfigId|INVALID|All Series|�"
+
+    # Description:
+    #    `-v`      : set $FILTERLIST into a variable called `list`
+    #    `gsub()`  : replace all list items (ignoring case) with an empty string, deleting them
+    #    `{$1=$1}1`: remove all extra spaces. The last "1" evaluates as true, printing the result
+    echo "$1" | awk -v list="$FILTERLIST" '{IGNORECASE=1; gsub(list,"")}; {$1=$1}1'
+}
+
+# Truncates a given string and appends three '...'
+# takes two parameters
+# $1: string to truncate
+# $2: max length of the string
+truncateString() {
+    local truncatedString length shorted
+
+    length=${#1}
+    shorted=$(($2-3)) # shorten max allowed length by 3 to make room for the dots
+    if [ "${length}" -gt "$2" ]; then
+        # if length of the string is larger then the specified max length
+        # cut every char from the string exceeding length $shorted and add three dots
+        truncatedString=$(echo "$1" | cut -c1-$shorted)"..."
+        echo "${truncatedString}"
+    else
+        echo "$1"
+    fi
+}
+
+# Converts seconds to days, hours, minutes
+# https://unix.stackexchange.com/a/338844
+convertUptime() {
+    # shellcheck disable=SC2016
+    eval "echo $(date -ud "@$1" +'$((%s/3600/24)) days, %H hours, %M minutes')"
+}
+
+
+secretRead() {
+
+    # POSIX compliant function to read user-input and
+    # mask every character entered by (*)
+    #
+    # This is challenging, because in POSIX, `read` does not support
+    # `-s` option (suppressing the input) or
+    # `-n` option (reading n chars)
+
+
+    # This workaround changes the terminal characteristics to not echo input and later resets this option
+    # credits https://stackoverflow.com/a/4316765
+    # showing asterisk instead of password
+    # https://stackoverflow.com/a/24600839
+    # https://unix.stackexchange.com/a/464963
+
+    stty -echo # do not echo user input
+    stty -icanon min 1 time 0 # disable canonical mode https://man7.org/linux/man-pages/man3/termios.3.html
+
+    unset password
+    unset key
+    unset charcount
+    charcount=0
+    while key=$(dd ibs=1 count=1 2>/dev/null); do #read one byte of input
+        if [ "${key}" = "$(printf '\0' | tr -d '\0')" ] ; then
+            # Enter - accept password
+            break
+        fi
+        if [ "${key}" = "$(printf '\177')" ] ; then
+            # Backspace
+            if [ $charcount -gt 0 ] ; then
+                charcount=$((charcount-1))
+                printf '\b \b'
+                password="${password%?}"
+            fi
+        else
+            # any other character
+            charcount=$((charcount+1))
+            printf '*'
+            password="$password$key"
+        fi
+    done
+
+    # restore original terminal settings
+    stty "${stty_orig}"
+}
 
 ########################################## MAIN FUNCTIONS ##########################################
 
@@ -1157,7 +1505,7 @@ StartupRoutine(){
     echo -e "Checking connection."
     CheckConnectivity "$1"
     echo -e "Starting PADD..."
-
+    
     # Get PID of PADD
     pid=$$
     echo -ne " [¦·········]  10%\\r"
@@ -1246,6 +1594,13 @@ StartupRoutine(){
     else
       echo "  - PADD version file not found."
     fi
+   
+    # Test if the authentication endpoint is available
+    TestAPIAvailability
+
+    # Authenticate with the FTL server
+    moveXOffset; printf "%b" "Establishing connection with FTL...\n"
+    LoginAPI
 
     # Get our information for the first time
     echo "- Gathering system information..."
@@ -1468,7 +1823,7 @@ EOM
     exit 0
 }
 
-if [[ $# = 0 ]]; then
+main() {
   # Turns off the cursor
   # (From Pull request #8 https://github.com/jpmck/PADD/pull/8)
   setterm -cursor off
@@ -1490,12 +1845,30 @@ if [[ $# = 0 ]]; then
   # Run PADD
   clear
   NormalPADD
-fi
+}
 
-for var in "$@"; do
-  case "$var" in
-    "-j" | "--json"  ) OutputJSON;;
-    "-h" | "--help"  ) DisplayHelp;;
-    *                ) exit 1;;
+#for var in "$@"; do
+#  case "$var" in
+#    "-j" | "--json"  ) OutputJSON;;
+#    "-h" | "--help"  ) DisplayHelp;;
+#    *                ) exit 1;;
+#  esac
+#done
+
+# Process all options (if present)
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    "-j" | "--json"     ) xOffset=0; OutputJSON; exit 0;;
+    "-u" | "--update"   ) Update;;
+    "-h" | "--help"     ) DisplayHelp; exit 0;;
+    "-v" | "--version"  ) xOffset=0; ShowVersion; exit 0;;
+    "--xoff"            ) xOffset="$2"; xOffOrig="$2"; shift;;
+    "--yoff"            ) yOffset="$2"; yOffOrig="$2"; shift;;
+    "--server"          ) SERVER="$2"; shift;;
+    "--secret"          ) password="$2"; shift;;
+    *                   ) DisplayHelp; exit 1;;
   esac
+  shift
 done
+
+main
