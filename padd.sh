@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v4.0.MRD"
 padd_version_latest="v4.0.MRD"
-padd_build="(68)"
+padd_build="(69)"
 
 
 # Settings for Domoticz
@@ -213,8 +213,8 @@ LoginAPI() {
     fi
 
     # Try to read the CLI password (if enabled and readable by the current user)
-    if [ -r /etc/pihole/cli_pw ]; then
-        password=$(cat /etc/pihole/cli_pw)
+    if [ -r cli_pw ]; then
+        password=$(cat cli_pw)
         echo "password found in file"
         # Try to authenticate using the CLI password
         Authenticate
