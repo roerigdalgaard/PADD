@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v4.0.MRD"
 padd_version_latest="v4.0.MRD"
-padd_build="(69)"
+padd_build="(72)"
 
 
 # Settings for Domoticz
@@ -977,13 +977,13 @@ CleanPrintf() {
     CleanPrintf "${padd_logo_retro_3}   ${pihole_check_box} Core  ${ftl_check_box} FTL   ${mega_status}${reset_text}\e[0K\\n"
     # CleanEcho ""
      if [ "$osupdate" == "Searching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${yellow_text}$osupdate for OS Updates ${reset_text}\e[0K\\n"
+        CleanPrintf "(${red_text}U${reset_text}) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${yellow_text}$osupdate for OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" == "Patching" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${green_text}$osupdate with OS Updates ${reset_text}\e[0K\\n"
+        CleanPrintf "(${red_text}U${reset_text}) ${bold_text}${yellow_text}  $clock ${reset_text}      ${bold_text}${green_text}$osupdate with OS Updates ${reset_text}\e[0K\\n"
      elif [ "$osupdate" != "0" ]; then
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${red_text}$osupdate${reset_text}]  ${bold_text}${red_text}OS Updates pending ${reset_text}\e[0K\\n"
+        CleanPrintf "(${red_text}U${reset_text}) ${bold_text}${yellow_text}  $clock ${reset_text}      [${bold_text}${red_text}$osupdate${reset_text}]  ${bold_text}${red_text}OS Updates pending ${reset_text}\e[0K\\n"
     else  
-        CleanPrintf "(0) ${bold_text}${yellow_text}  $clock ${reset_text}      ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
+        CleanPrintf "(${red_text}U${reset_text}) ${bold_text}${yellow_text}  $clock ${reset_text}      ${check_box_good} OS is uptodate ${reset_text}\e[0K\\n"
     fi
   fi
 }
@@ -1624,7 +1624,7 @@ StartupRoutine(){
     echo "  - Pi-hole Core v$core_version"
     echo "  - Web Admin v$web_version"
     echo "  - FTL v$ftl_version"
-    echo "  - PADD $padd_version"
+    echo "  - PADD $padd_version $padd_build"
     echo "  - $version_status"
     echo "  - CPU has $core_count cores"
     echo -e "  - IPv4:    ${IPV4_ADDRESS}"
@@ -1770,6 +1770,14 @@ NormalPADD() {
     # Get Config variables
     . /etc/pihole/setupVars.conf
 
+    # check if a new authentication is required (e.g. after connection to FTL has re-established)
+    # GetFTLData() will return a 401 if a 401 http status code is returned
+    # as $password should be set already, PADD should automatically re-authenticate
+    authenthication_required=$(GetFTLData "info/ftl")
+    if [ "${authenthication_required}" = 401 ]; then
+      Authenticate
+    fi
+
     # Move the cursor to top left of console to redraw
     tput cup 0 0
 
@@ -1795,22 +1803,26 @@ NormalPADD() {
     GetNetworkInformation ${padd_size}
     GetSummaryInformation ${padd_size}
     GetSystemInformation ${padd_size}
-
+    
+    if [ -z "${delay}" ]; then
+        delay=1
+    fi
+     
     # Sleep for 5 seconds
     # sleep 5
     if [[ "$padd_size" == "mega" ]] ; then 
       tput cup 3 0
       echo "${white_text}(${bold_text}${yellow_text}4${reset_text})" # "/"
-      sleep 2
+      sleep $delay
       tput cup 3 0
       echo "${white_text}(${bold_text}${yellow_text}3${reset_text})" #"-"
-      sleep 2
+      sleep $delay
       tput cup 3 0
       echo "${white_text}(${bold_text}${yellow_text}2${reset_text})" #"\\"
-      sleep 2
+      sleep $delay
       tput cup 3 0
       echo "${white_text}(${bold_text}${yellow_text}1${reset_text})" #"|"
-      #sleep 2
+      sleep $delay
       #tput cup 3 0
       #echo "+"
     else 
@@ -1875,6 +1887,7 @@ while [ "$#" -gt 0 ]; do
     "--yoff"            ) yOffset="$2"; yOffOrig="$2"; shift;;
     "--server"          ) SERVER="$2"; shift;;
     "--secret"          ) password="$2"; shift;;
+    "--delay"           ) delay="$2" ; shift ;;
     *                   ) DisplayHelp; exit 1;;
   esac
   shift
