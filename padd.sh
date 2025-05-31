@@ -17,7 +17,7 @@ LC_NUMERIC=C
 # VERSION
 padd_version="v4.0.MRD"
 padd_version_latest="v4.0.MRD"
-padd_build="(72)"
+padd_build="(73)"
 
 
 # Settings for Domoticz
@@ -1041,11 +1041,11 @@ PrintNetworkInformation() {
 #   CleanPrintf " %-10s%-39s\e[0K\\n" "Servers:" "${dns_information}"
 #   CleanPrintf " %-10s${dnssec_heatmap}%-19s${reset_text} %-20s${conditional_forwarding_heatmap}%-9s${reset_text}\e[0K\\n" "DNSSEC:" "${dnssec_status}" "Conditional Fwding:" "${conditional_forwarding_status}"
 
-    CleanEcho "DHCP =========================================================================="
+    CleanEcho "DHCP ==========================================================================${reset_text}"
     CleanPrintf " %-10s${dhcp_heatmap}%-19s${reset_text} %-10s${dhcp_ipv6_heatmap}%-9s${reset_text}\e[0K\\n" "DHCP:" "${dhcp_status}" "IPv6 Spt:" "${dhcp_ipv6_status}"
-    CleanPrintf "%s\e[0K\\n" "${dhcp_info} [${dhcp_heatmap}${dhcp_bar}]${dhcp_percent}%"
+    CleanPrintf "%s\e[0K\\n" "${dhcp_info} [${dhcp_heatmap}${dhcp_bar}]${dhcp_percent}%${reset_text}"
     
-    CleanEcho "Monitors ======================================================================"
+    CleanEcho "Monitors ======================================================================${reset_text}"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm1t}" "${alarm1c}" "${alarm1r}" "${alarm2t}" "${alarm2c}" "${alarm2r}"
     CleanPrintf " %-10s%-4s %-15s %-10s%-4s %-15s\e[0K\\n" "${alarm3t}" "${alarm3c}" "${alarm3r}" "${alarm4t}" "${alarm4c}" "${alarm4r}"
   fi
